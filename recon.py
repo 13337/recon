@@ -20,7 +20,6 @@ headers = {
     'Connection': 'close'
 }
 
-json_response=""
 path_to_dirsearch = "/usr/bin"
 domain = input("Enter the domain: ")
 url = 'https://crt.sh/?q=' + domain + '&output=json'
