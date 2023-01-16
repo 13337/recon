@@ -24,17 +24,12 @@ path_to_dirsearch = "/usr/bin"
 domain = input("Enter the domain: ")
 url = 'https://crt.sh/?q=' + domain + '&output=json'
 directory = domain + "_recon"
-print("Creating directory and files " + directory + ".")
+print("Creating directory " + directory + ".")
 os.mkdir(directory)
-
-def nmap_scan():
-    os.system("touch ./" + directory + "/nmap")
-    os.system("nmap -v " + domain + " > " + directory + "/nmap")
-    print("The results of nmap scan are stored in " + directory + "/nmap.")
 
 def dirsearch_scan():
     os.system("touch ./" + directory + "/crt")
-    os.system(path_to_dirsearch + "/dirsearch -u " + domain + " -e php --format=simple --output=" + directory + "/dirsearch")
+    os.system(path_to_dirsearch + "/dirsearch -u " + domain + " --format=simple --output=" + directory + "/dirsearch")
     print("The results of dirsearch scan are stored in " + directory + "/dirsearch.")
 
 def crt_scan():
@@ -50,6 +45,11 @@ def subdomain_scan():
     os.system("gobuster dns -t 30 -d " + domain + " -w /usr/share/wordlists/combined_subdomains.txt -o " + directory + "/subdomains")
     print("The results of gobuster are stored in " + directory + "/subdomains.")
 
+def nmap_scan():
+    os.system("touch ./" + directory + "/nmap")
+    os.system("nmap -v " + domain + " > " + directory + "/nmap")
+    print("The results of nmap scan are stored in " + directory + "/nmap.")
+
 scan_type = input("Enter the scan type (1) nmap only, 2) dirsearch only, 3) crt only, 4) subdomain enumeration only, or hit enter for all): ")
 
 if scan_type == "1":
@@ -61,10 +61,10 @@ elif scan_type == "3":
 elif scan_type == "4":
     subdomain_scan()
 else:
-    nmap_scan()
     dirsearch_scan()
     crt_scan()
     subdomain_scan()
+    nmap_scan()
 
 print("Generating recon report from output files...")
 today = str(datetime.now())
@@ -75,12 +75,10 @@ with open(directory + "/report", "w") as report:
     
     with open(directory + "/nmap") as nmap:
         for line in nmap:
-            # if line.isnumeric():
             report.write(line)
     
     with open(directory + "/dirsearch") as dirsearch:
         report.write("Results for Dirsearch:\n")
-        
         for line in dirsearch:
             report.write(line)
     
@@ -89,8 +87,8 @@ with open(directory + "/report", "w") as report:
         json_data = json.load(crt)
         for item in json_data:
             report.write(item["name_value"] + "\n")
-
     with open(directory + "/subdomains") as subdomains:
         report.write("Results for subdomain enumeration:\n")
         for item in subdomains:
             report.write(item)
+print("Report located at " + directory + "/report")
