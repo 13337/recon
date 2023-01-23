@@ -31,18 +31,69 @@ else:
     os.mkdir(directory)
 
 def dirsearch_scan():
-    os.system("touch ./" + directory + "/crt")
+    os.system("touch ./" + directory + "/dirsearch")
     os.system(path_to_dirsearch + "/dirsearch -u " + domain + " --format=simple --output=" + directory + "/dirsearch")
     print("The results of dirsearch scan are stored in " + directory + "/dirsearch.")
 
 def crt_scan():
-    os.system("touch ./" + directory + "/dirsearch")
+    os.system("touch ./" + directory + "/crt")
     response = requests.get(url, headers=headers)
     json_response = response.json()
     with open(directory + '/crt', 'w') as f:
         json.dump(json_response, f)
     print("The results of cert parsing is stored in " + directory + "/crt.")
 
+def subdomain_scan():
+    os.system("touch ./" + directory + "/subdomains")
+    os.system("gobuster dns -t 30 -d " + domain + " -w /usr/share/wordlists/combined_subdomains.txt -o " + directory + "/subdomains")
+    print("The results of gobuster are stored in " + directory + "/subdomains.")
+
+def nmap_scan():
+    os.system("touch ./" + directory + "/nmap")
+    if os.path.exists('./' + directory + '/subdomains'):
+        subdomain_array = []
+        with open(directory + "/subdomains", "r") as subdomains:
+            for line in subdomains:
+                subdomain_array.append(line)
+        for line in subdomain_array:
+            line = line.replace("Found: ", "").replace("\n","")
+            os.system("nmap -vv -sV " + line + " >> " + directory + "/nmap")
+    else:
+        os.system("nmap -vv -sV " + domain + " > " + directory + "/nmap")
+    print("The results of nmap scan are stored in " + directory + "/nmap.")
+
+dirsearch_scan()
+crt_scan()
+subdomain_scan()
+nmap_scan()
+
+print("Generating recon report from output files...")
+today = str(datetime.now())
+os.system("touch ./" + directory + "/report")
+with open(directory + "/report", "w") as report:
+    report.write("This scan was created on " + today + "\n")
+    report.write("Results for Nmap:\n")
+    
+    with open(directory + "/nmap") as nmap:
+        for line in nmap:
+            report.write(line)
+    
+    with open(directory + "/dirsearch") as dirsearch:
+        report.write("Results for Dirsearch:\n")
+        for line in dirsearch:
+            report.write(line)
+    
+    with open(directory + "/crt") as crt:
+        report.write("Results for crt.sh:\n")
+        json_data = json.load(crt)
+        for item in json_data:
+            report.write(item["name_value"] + "\n")
+    
+    with open(directory + "/subdomains") as subdomains:
+        report.write("Results for subdomain enumeration:\n")
+        for item in subdomains:
+            report.write(item)
+print("Report located in " + directory + "/report")
 def subdomain_scan():
     os.system("touch ./" + directory + "/subdomains")
     os.system("gobuster dns -t 30 -d " + domain + " -w /usr/share/wordlists/combined_subdomains.txt -o " + directory + "/subdomains")
